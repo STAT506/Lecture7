@@ -1,0 +1,118 @@
+---
+title: "Lecture 7: Gelman Hill Ch 4.1 - 4.3"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(show.signif.stars = FALSE)
+library(tidyverse) 
+library(arm)
+```
+
+
+For various reasons, data transformations may be necessary or result in better interpretations for regression models.
+
+### Linear Transformations
+
+Linear transformations of predictors can be formulated as:
+
+\vfill
+
+Linear transformations of the predictors do not influence the fit or predictions of a regression model. 
+\vfill
+
+Recall the general interpretation of the regression coefficients is "the average difference in y when comparing units that differ by one unit, on predictor j, and are otherwise identical." However, consider two covariates:
+
+
+
+\vfill
+
+```{r, message = F}
+library(readr)
+library(arm)
+Seattle <- read_csv('http://math.montana.edu/ahoegh/teaching/stat408/datasets/SeattleHousing.csv')
+```
+
+```{r}
+summary(lm(price ~ bedrooms + sqft_living, data = Seattle))
+```
+
+
+\newpage
+Furthermore, the interpretation of the intercept is still a little confusing. In this case, we are looking at a house with zero bedrooms and zero square feet of living space.
+\vfill
+
+#### Standardization
+
+One common option is to standardize the predictors using a z-scale.
+
+
+
+\vfill
+
+```{r}
+library(dplyr)
+Seattle <- Seattle %>% mutate(sqft_z = (sqft_living - mean(sqft_living))/sd(sqft_living),
+                              bedrooms_z = (bedrooms - mean(bedrooms))/sd(bedrooms))
+```
+
+Note it is important to interpret the zero values for each covariate, so the mean living space is `r round(mean(Seattle$sqft_living))` and the mean number of bedrooms is `r round(mean(Seattle$bedrooms),2)`.
+
+\vfill
+
+```{r}
+lm_standard <- lm(price ~ bedrooms_z + sqft_z, data = Seattle)
+summary(lm_standard)
+```
+
+\newpage
+
+Now the intepretation of the parameters is:
+
+- (Intercept): The predicted price of a house with 
+\vfill
+
+- (bedrooms_z): The average difference in price when comparing houses that differ by 
+\vfill
+
+- (sqft_z): The average difference in price when comparing houses that differ by 
+
+\vfill
+
+Note when summarizing the coefficients for homework, exams, or projects, make sure to talk about the size of the difference and include confidence intervals in the discussion.
+
+```{r}
+confint(lm_standard)
+```
+
+\vfill
+
+The data can also be centered and/or standardized using different approaches. 
+
+\vfill
+\vfill
+\vfill
+
+\newpage
+
+#### Correlation
+
+Consider a regression line $y = \beta_0 + \beta_1 x$, where both $x$ and $y$ are standardized.
+\vfill
+```{r}
+Seattle <- Seattle %>% mutate(y = (price - mean(price))/sd(price),
+                              x = (sqft_living - mean(sqft_living))/sd(sqft_living))
+library(ggplot2)
+Seattle %>% ggplot(aes(y = y, x=x)) + geom_point(alpha = .1) + geom_smooth(method = 'lm') +
+  ggtitle('Correlation between Price and Square Footage') + ylab('Price (standardized)') + xlab('Square Footage (standardized)') + annotate("text", x = 6, y = 2, label = paste("Slope is", round(cor(Seattle$y,Seattle$x),2))) + geom_segment(x = 6, y = 2.2, xend = 5, yend = 3.8, arrow = arrow(length = unit(.5,"cm")))
+
+display(lm(y~x, data = Seattle))
+cor(Seattle$y,Seattle$x)
+```
+
+\vfill
+_Regression to the mean:_ 
+
+\newpage
